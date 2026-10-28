@@ -1,0 +1,65 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Incentive Calculator</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f2f4f8;color:#1d2433}
+.w{max-width:640px;margin:auto;padding:16px}h1{font-size:22px}
+.card{background:#fff;border:1px solid #dde2ec;border-radius:12px;padding:16px;margin:12px 0}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:480px){.g{grid-template-columns:1fr}}
+label{font-size:13px;color:#6b7385;display:block;margin-bottom:4px}
+input{width:100%;box-sizing:border-box;padding:10px;font-size:17px;border:1px solid #c9d0dc;border-radius:8px}
+.tabs{display:flex;flex-wrap:wrap;border-bottom:2px solid #dde2ec;margin-bottom:12px}
+.tab{border:0;background:none;padding:10px 14px;font-size:15px;cursor:pointer;color:#6b7385;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab.on{color:#2563eb;border-bottom-color:#2563eb;font-weight:bold}
+.pane{display:none}.pane.on{display:block}
+.big{font-size:28px;font-weight:bold;color:#2563eb}
+table{width:100%;border-collapse:collapse}td{padding:8px 4px;border-bottom:1px solid #eef0f4}td:last-child{text-align:right;font-weight:bold}
+.f{background:#f2f4f8;padding:10px;border-radius:8px;font-family:monospace;font-size:14px;line-height:1.6}
+.note{color:#b45309;font-size:14px;margin-top:8px}
+</style></head><body><div class="w">
+<h1>Recruiter Incentive Calculator</h1>
+<div class="card g">
+<div><label>Regular hours, previous month (16th–31st)</label><input id="rhp" type="number" step="any" value="28.28" oninput="calc()"></div>
+<div><label>Regular hours, current month</label><input id="rh" type="number" step="any" value="169.6" oninput="calc()"></div>
+<div><label>OT hours, previous month (16th–31st)</label><input id="ohp" type="number" step="any" value="0" oninput="calc()"></div>
+<div><label>OT hours, current month</label><input id="oh" type="number" step="any" value="0" oninput="calc()"></div>
+<div><label>Regular margin ($/hr)</label><input id="rm" type="number" step="any" value="7.07" oninput="calc()"></div>
+<div><label>OT margin ($/hr)</label><input id="om" type="number" step="any" value="0" oninput="calc()"></div>
+</div>
+<div class="card"><label>Total incentive</label><div class="big" id="tot">₹0.00</div></div>
+<div class="card">
+<div class="tabs">
+<button class="tab on" onclick="show(0)">Summary</button><button class="tab" onclick="show(1)">Regular Hours</button><button class="tab" onclick="show(2)">OT Hours</button></div>
+<div class="pane on" id="p0"></div><div class="pane" id="p1"></div><div class="pane" id="p2"></div>
+</div>
+<div class="card" style="font-size:13px;color:#6b7385">Multiplier is ₹600. Regular and OT hours are each capped at 160 per month. If a candidate starts between the 16th and 31st, that previous month's hours are paid together with the current month's incentive.<br>
+Regular incentive = Regular margin × 600 × (Regular hours ÷ 160)<br>OT incentive = OT margin × 600 × (OT hours ÷ 160)</div>
+</div>
+<script>
+var MULT=600,CAP=160;
+function num(id){var v=parseFloat(document.getElementById(id).value);return (isNaN(v)||v<0)?0:v;}
+function inr(n){return '₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function t(n){return Math.round(n*100)/100;}
+function show(i){var b=document.getElementsByClassName('tab'),p=document.getElementsByClassName('pane');
+ for(var k=0;k<b.length;k++){b[k].className='tab'+(k==i?' on':'');p[k].className='pane'+(k==i?' on':'');}}
+function part(m,h){var c=Math.min(h,CAP);return {h:h,c:c,v:m*MULT*c/CAP};}
+function lines(name,m,pv,cu){
+ var x='<div class="f">'+name+' margin × 600 × (Hours ÷ 160), each month capped at 160<br><br>Previous month: '+t(m)+' × 600 × ('+t(pv.c)+' ÷ 160) = '+inr(pv.v)+
+ '<br>Current month: '+t(m)+' × 600 × ('+t(cu.c)+' ÷ 160) = '+inr(cu.v)+'<br><br>Total = '+inr(pv.v)+' + '+inr(cu.v)+' = '+inr(pv.v+cu.v)+'</div>';
+ if(pv.h>CAP)x+='<div class="note">Previous month: '+t(pv.h)+' hours entered, capped at 160.</div>';
+ if(cu.h>CAP)x+='<div class="note">Current month: '+t(cu.h)+' hours entered, capped at 160.</div>';return x;}
+function calc(){
+ var rm=num('rm'),om=num('om');
+ var rp=part(rm,num('rhp')),rc=part(rm,num('rh')),op=part(om,num('ohp')),oc=part(om,num('oh'));
+ var ri=rp.v+rc.v,oi=op.v+oc.v,tot=ri+oi;
+ document.getElementById('tot').innerHTML=inr(tot);
+ document.getElementById('p0').innerHTML='<table>'+
+  '<tr><td>Regular hours, previous month (paid)</td><td>'+t(rp.c)+'</td></tr><tr><td>Regular hours, current month (paid)</td><td>'+t(rc.c)+'</td></tr>'+
+  '<tr><td>OT hours, previous month (paid)</td><td>'+t(op.c)+'</td></tr><tr><td>OT hours, current month (paid)</td><td>'+t(oc.c)+'</td></tr>'+
+  '<tr><td>Regular margin</td><td>$'+t(rm)+'</td></tr><tr><td>OT margin</td><td>$'+t(om)+'</td></tr>'+
+  '<tr><td>Regular incentive</td><td>'+inr(ri)+'</td></tr><tr><td>OT incentive</td><td>'+inr(oi)+'</td></tr>'+
+  '<tr><td>Total incentive</td><td>'+inr(tot)+'</td></tr></table>';
+ document.getElementById('p1').innerHTML=lines('Regular',rm,rp,rc);
+ document.getElementById('p2').innerHTML=lines('OT',om,op,oc);
+}
+calc();
+</script></body></html>
